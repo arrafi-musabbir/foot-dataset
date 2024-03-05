@@ -1,0 +1,7 @@
+/__pycache__
+/venv/
+*.obj
+*.off
+*.stl
+*.mtl
+*.png
