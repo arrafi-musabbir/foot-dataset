@@ -1,11 +1,11 @@
 import keras
 from keras import layers
-from keras import ops
+# from keras import ops
 import numpy as np
 import glob
 import trimesh
 from tensorflow import data as tf_data
-
+import tensorflow as tf
 
 print(keras.__version__)
 
@@ -14,32 +14,44 @@ NUM_CLASSES = 1
 BATCH_SIZE = 64
 
 
+import keras
+from keras import layers
+import tensorflow as tf
+
+print(keras.__version__)
+
 def conv_bn(x, filters):
     x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
     x = layers.BatchNormalization(momentum=0.0)(x)
     return layers.Activation("relu")(x)
-
 
 def dense_bn(x, filters):
     x = layers.Dense(filters)(x)
     x = layers.BatchNormalization(momentum=0.0)(x)
     return layers.Activation("relu")(x)
 
-class OrthogonalRegularizer(keras.regularizers.Regularizer):
-    def __init__(self, num_features, l2reg=0.001):
-        self.num_features = num_features
-        self.l2reg = l2reg
-        self.eye = ops.eye(num_features)
 
-    def __call__(self, x):
-        x = ops.reshape(x, (-1, self.num_features, self.num_features))
-        xxt = ops.tensordot(x, x, axes=(2, 2))
-        xxt = ops.reshape(xxt, (-1, self.num_features, self.num_features))
-        return ops.sum(self.l2reg * ops.square(xxt - self.eye))
+@keras.saving.register_keras_serializable('OrthogonalRegularizer')
+class OrthogonalRegularizer(keras.regularizers.Regularizer):
+
+    def __init__(self, num_features, **kwargs):
+        self.num_features = num_features
+        self.l2reg = 0.001
+
+    def call(self, x):
+        x = tf.reshape(x, (-1, self.num_features, self.num_features))
+        xxt = tf.tensordot(x, x, axes=(2, 2))
+        xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
+        eye = tf.eye(self.num_features)
+        return tf.math.reduce_sum(self.l2reg * tf.square(xxt - eye))
+
+
+    def get_config(self):
+        return {"num_features": self.num_features, "l2reg": self.l2reg}
 
 
 def tnet(inputs, num_features):
-    # Initalise bias as the indentity matrix
+    # Initialise bias as the identity matrix
     bias = keras.initializers.Constant(np.eye(num_features).flatten())
     reg = OrthogonalRegularizer(num_features)
 
@@ -85,8 +97,14 @@ def build_model():
     model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
     model = keras.models.load_model('my_model.h5')
     return model
-# model.summary()
 
+def load_model():
+    model = keras.models.load_model('my_model.keras', custom_objects={'OrthogonalRegularizer': OrthogonalRegularizer})
+    return model
+
+
+# model.summary()
+# build_model()
 def parse_unknown_dataset(file_path, num_points):
     test_points = []
     test_labels = []

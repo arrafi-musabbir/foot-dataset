@@ -7,7 +7,6 @@ from statistics import mean
 import build_model
 import keras
 from keras import layers
-from keras import ops
 import numpy as np
 import glob
 # import trimesh
@@ -37,21 +36,40 @@ def clean_directory(directory_path):
             except Exception as e:
                 print(f'Failed to delete {file_path}. Reason: {e}')
 
+import tensorflow as tf
+
+
 
 @st.cache_resource 
 def loading_all_models():
     clean_directory('temp_files')
     clean_directory('pre-filtered')
-    model = build_model.build_model()
+    
+    @keras.saving.register_keras_serializable('OrthogonalRegularizer')
+    class OrthogonalRegularizer(keras.regularizers.Regularizer):
+
+        def __init__(self, num_features, **kwargs):
+            self.num_features = num_features
+            self.l2reg = 0.001
+
+        def call(self, x):
+            x = tf.reshape(x, (-1, self.num_features, self.num_features))
+            xxt = tf.tensordot(x, x, axes=(2, 2))
+            xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
+            eye = tf.eye(self.num_features)
+            return tf.math.reduce_sum(self.l2reg * tf.square(xxt - eye))
+
+
+        def get_config(self):
+            return {"num_features": self.num_features, "l2reg": self.l2reg}
+        
+    model = keras.models.load_model('my_model.keras', custom_objects={'OrthogonalRegularizer': OrthogonalRegularizer})
     return model
 
 model = loading_all_models()
 
 
-def saveUpload(fpath, tfile):
-    with open(fpath,"wb") as f:
-        f.write(tfile.getbuffer())
-    return True
+
 
 if helper.api_check() == 200:
     st.sidebar.write("API STATUS CHECK: 🟢")
@@ -73,7 +91,7 @@ def auto_filter(fpath):
 
     preds = model.predict(points)
     f = preds
-    preds = ops.argmax(preds, -1)
+    preds = tf.math.argmax(preds, -1)
     points = points.numpy()
     
     for i in range(test_points1.shape[0]):
@@ -198,15 +216,20 @@ def show_objs_in_directory(fpath, directory_path):
         #     key="download_button_2",
         #     mime="text/plain",  # Specify the MIME type as text/plain for OBJ files
         # )
-
+        
+def saveUpload(fpath, tfile):
+    clean_directory("uploaded_file")
+    with open(fpath,"wb") as f:
+        f.write(tfile.getbuffer())
+    return True
 
 uploaded_file = st.sidebar.file_uploader("Choose a mesh file (.obj)", type='obj')
 if uploaded_file is not None:
     # helper.clean_directory('outputs')
     # helper.clean_directory('uploaded_file')
     fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
+    fpath = os.path.join(os.getcwd(), fpath)
     saveUpload(fpath, uploaded_file)
-    fpath =os.path.join(os.getcwd(), fpath)
  
     # st.sidebar.button('quad-conversion', on_click=helper.quad_remesh_conversion, args = [fpath])
     # st.sidebar.button('mirror-mesh-object', on_click=helper.mirror_mesh, args= [fpath])
