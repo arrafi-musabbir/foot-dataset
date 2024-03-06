@@ -13,7 +13,8 @@ import glob
 from tensorflow import data as tf_data
 from stpyvista import stpyvista
 import pyvista as pv
-
+import subprocess
+import urllib.parse as parse
 
 os.makedirs('outputs', exist_ok=True)
 os.makedirs('uploaded_file', exist_ok=True)
@@ -21,8 +22,29 @@ os.makedirs('temp_files', exist_ok=True)
 os.makedirs('pre-filtered', exist_ok=True)
 
 
+def is_embed():
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+    ctx = get_script_run_ctx()
+    query_params = parse.parse_qs(ctx.query_string)
+    return True if query_params.get("embed") else False
+
+IS_APP_EMBED = is_embed()
+
 st.sidebar.title("MESH PROCESSING API")
 
+
+
+## Check if xvfb is already running on the machine
+is_xvfb_running = subprocess.run(["pgrep", "Xvfb"], capture_output=True)
+
+if is_xvfb_running.returncode == 1:
+    if not IS_APP_EMBED:
+        st.toast("Xvfb was not running...", icon="⚠️")
+    pv.start_xvfb()
+else:
+    if not IS_APP_EMBED:
+        st.toast(f"Xvfb is running! \n\n`PID: {is_xvfb_running.stdout.decode('utf-8')}`", icon="📺")
 
 def clean_directory(directory_path):
     if os.path.exists(directory_path):
