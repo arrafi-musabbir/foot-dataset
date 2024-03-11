@@ -70,21 +70,22 @@ def clean_directory(directory_path):
 #     ms.save_current_mesh(p)
 #     c = c + 1
 
-def order_mesh(directory_path):
-    obj_files = glob.glob(os.path.join(directory_path, '*.obj'))
-    info_dict = {}
-    for file in obj_files:
-        ms = pymeshlab.MeshSet()
-        ms.load_new_mesh(file)
-        # Step 2: Get mesh information
-        num_vertices = ms.current_mesh().vertex_number()
-        num_faces = ms.current_mesh().face_number()
-        # Step 3: Print mesh information
-        # print("\tNumber of vertices:", num_vertices)
-        # print("\tNumber of faces:", num_faces)
-        info_dict[file] = [num_vertices, num_faces]
-    sorted_data = dict(sorted(info_dict.items(), key=lambda item: item[1][1], reverse=True))
-    print(sorted_data)
-    return sorted_data.keys()
+# def order_mesh(directory_path):
+#     obj_files = glob.glob(os.path.join(directory_path, '*.obj'))
+#     info_dict = {}
+#     for file in obj_files:
+#         ms = pymeshlab.MeshSet()
+#         ms.load_new_mesh(file)
+#         # Step 2: Get mesh information
+#         num_vertices = ms.current_mesh().vertex_number()
+#         num_faces = ms.current_mesh().face_number()
+#         # Step 3: Print mesh information
+#         # print("\tNumber of vertices:", num_vertices)
+#         # print("\tNumber of faces:", num_faces)
+#         info_dict[file] = [num_vertices, num_faces]
+#     sorted_data = dict(sorted(info_dict.items(), key=lambda item: item[1][1], reverse=True))
+#     print(sorted_data)
+#     return sorted_data.keys()
         
-print(order_mesh("pre-filtered"))
+# print(order_mesh("pre-filtered"))
+

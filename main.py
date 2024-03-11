@@ -134,6 +134,12 @@ def auto_filter(fpath):
 
 
 def manual_filter(file_path):
+    from datetime import datetime
+
+    now = datetime.now()
+
+    current_time = now.strftime("%H:%M:%S")
+    print(f"Current Time = {current_time}")
     file = file_path
     clean_directory('temp_files')
     clean_directory('pre-filtered')
