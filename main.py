@@ -178,11 +178,29 @@ def manual_filter(file_path):
             component_mesh_path = f"pre-filtered/{key.split('/')[-1][:-4]}.stl"
             ms.save_current_mesh(component_mesh_path)
     auto_filter('pre-filtered')
-            
+        
+def order_mesh(directory_path):
+    obj_files = glob.glob(os.path.join(directory_path, '*foot_*.obj'))
+    info_dict = {}
+    for file in obj_files:
+        ms = pymeshlab.MeshSet()
+        ms.load_new_mesh(file)
+        # Step 2: Get mesh information
+        num_vertices = ms.current_mesh().vertex_number()
+        num_faces = ms.current_mesh().face_number()
+        # Step 3: Print mesh information
+        # print("\tNumber of vertices:", num_vertices)
+        # print("\tNumber of faces:", num_faces)
+        info_dict[file] = [num_vertices, num_faces]
+    sorted_data = dict(sorted(info_dict.items(), key=lambda item: item[1][1], reverse=True))
+    print(sorted_data)
+    return sorted_data.keys()
 
 
 def show_objs_in_directory(fpath, directory_path):
     st.title("OBJ File Downloader")
+    obj_files = sorted(glob.glob(os.path.join('temp_files', '*.obj')))
+    selected_obj = st.sidebar.selectbox("Total Seperated Components: {len(obj_files)}", obj_files)
     col1, col2 = st.columns(2)
     
     with col1:
@@ -201,7 +219,8 @@ def show_objs_in_directory(fpath, directory_path):
             st.error(f"Error reading or displaying the selected OBJ file: {e}")
             
     with col2:
-        obj_files = sorted(glob.glob(os.path.join(directory_path, '*.obj')))
+        # obj_files = sorted(glob.glob(os.path.join(directory_path, '*foot_*.obj')), reverse=True)
+        obj_files = order_mesh(directory_path)
         if not obj_files:
             st.warning("No OBJ files found in the directory.")
             return
@@ -241,6 +260,8 @@ def show_objs_in_directory(fpath, directory_path):
         
 def saveUpload(fpath, tfile):
     clean_directory("uploaded_file")
+    clean_directory("pre-filtered")
+    clean_directory("temp_files")
     with open(fpath,"wb") as f:
         f.write(tfile.getbuffer())
     return True
@@ -252,12 +273,12 @@ if uploaded_file is not None:
     fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
     fpath = os.path.join(os.getcwd(), fpath)
     saveUpload(fpath, uploaded_file)
- 
+    manual_filter(fpath)
     # st.sidebar.button('quad-conversion', on_click=helper.quad_remesh_conversion, args = [fpath])
     # st.sidebar.button('mirror-mesh-object', on_click=helper.mirror_mesh, args= [fpath])
     # st.sidebar.button('filter-mesh-artifacts', on_click=helper.filter_artifacts, args= [fpath])
     # st.sidebar.button('surface-reconstruction', on_click=helper.reconstruct_mesh, args= [fpath])
-    a = st.sidebar.button('filter', on_click=manual_filter, args= [fpath])
+    # a = st.sidebar.button('filter', on_click=manual_filter, args= [fpath])
     # st.sidebar.button('intelligent-filter', on_click=auto_filter, args= ['pre-filtered'])
     # st.sidebar.button('manual-filter', on_click=helper.reconstruct_mesh, args= [fpath])
     # obj_files = sorted(glob.glob(os.path.join('pre-filtered', '*.obj')))

@@ -1,17 +1,17 @@
-# import keras
-# from keras import layers
-# from keras import ops
-# import numpy as np
-# import glob
-# import trimesh
-# from tensorflow import data as tf_data
+import keras
+from keras import layers
+import tensorflow as tf
+import numpy as np
+import glob
+import trimesh
+from tensorflow import data as tf_data
 
 
-# print(keras.__version__)
+print(keras.__version__)
 
-# NUM_POINTS = 2048
-# NUM_CLASSES = 1
-# BATCH_SIZE = 64
+NUM_POINTS = 2048
+NUM_CLASSES = 1
+BATCH_SIZE = 64
 
 
 # def conv_bn(x, filters):
@@ -25,18 +25,25 @@
 #     x = layers.BatchNormalization(momentum=0.0)(x)
 #     return layers.Activation("relu")(x)
 
-# class OrthogonalRegularizer(keras.regularizers.Regularizer):
-#     def __init__(self, num_features, l2reg=0.001):
-#         self.num_features = num_features
-#         self.l2reg = l2reg
-#         self.eye = ops.eye(num_features)
+@keras.saving.register_keras_serializable('OrthogonalRegularizer')
+class OrthogonalRegularizer(keras.regularizers.Regularizer):
 
-#     def __call__(self, x):
-#         x = ops.reshape(x, (-1, self.num_features, self.num_features))
-#         xxt = ops.tensordot(x, x, axes=(2, 2))
-#         xxt = ops.reshape(xxt, (-1, self.num_features, self.num_features))
-#         return ops.sum(self.l2reg * ops.square(xxt - self.eye))
+    def __init__(self, num_features, **kwargs):
+        self.num_features = num_features
+        self.l2reg = 0.001
 
+    def call(self, x):
+        x = tf.reshape(x, (-1, self.num_features, self.num_features))
+        xxt = tf.tensordot(x, x, axes=(2, 2))
+        xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
+        eye = tf.eye(self.num_features)
+        return tf.math.reduce_sum(self.l2reg * tf.square(xxt - eye))
+
+
+#     def get_config(self):
+#         return {"num_features": self.num_features, "l2reg": self.l2reg}
+        
+    
 
 # def tnet(inputs, num_features):
 #     # Initalise bias as the indentity matrix
@@ -82,45 +89,45 @@
 
 # outputs = layers.Dense(NUM_CLASSES, activation="sigmoid")(x)
 # model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
-# # model.summary()
+# model.summary()
 
-# def parse_unknown_dataset(file_path, num_points):
-#     test_points = []
-#     test_labels = []
-#     class_map = {}
-#     i = 0
-#     test_files = glob.glob(f"{file_path}/*.off")
+def parse_unknown_dataset(file_path, num_points):
+    test_points = []
+    test_labels = []
+    class_map = {}
+    i = 0
+    test_files = glob.glob(f"{file_path}/*.off")
 
-#     means = []
-#     stds = []
+    means = []
+    stds = []
 
-#     for f in test_files:
-#         class_map[i] = f.split("/")[-1]
-#         point_cloud = trimesh.load(f).sample(num_points)
+    for f in test_files:
+        class_map[i] = f.split("/")[-1]
+        point_cloud = trimesh.load(f).sample(num_points)
 
-#         mean = np.mean(point_cloud, axis=0)
-#         std = np.std(point_cloud, axis=0)
+        mean = np.mean(point_cloud, axis=0)
+        std = np.std(point_cloud, axis=0)
 
-#         normalized_point_cloud = (point_cloud - mean) / std
+        normalized_point_cloud = (point_cloud - mean) / std
 
-#         test_points.append(normalized_point_cloud)
-#         test_labels.append(i)
+        test_points.append(normalized_point_cloud)
+        test_labels.append(i)
 
-#         means.append(mean)
-#         stds.append(std)
-#         i += 1
+        means.append(mean)
+        stds.append(std)
+        i += 1
         
-#     means = np.array(means)
-#     stds = np.array(stds)
+    means = np.array(means)
+    stds = np.array(stds)
 
-#     return (
-#         np.array(test_points),
-#         np.array(test_labels),
-#         class_map
-#     )
+    return (
+        np.array(test_points),
+        np.array(test_labels),
+        class_map
+    )
 
 # def 
-# model = keras.models.load_model('my_model.h5')
+model = keras.models.load_model('my_model.keras', custom_objects={'OrthogonalRegularizer': OrthogonalRegularizer})
 
 # for k in range(5):
 def detect_foot(fpath):
@@ -136,7 +143,7 @@ def detect_foot(fpath):
 
     preds = model.predict(points)
     f = preds
-    preds = ops.argmax(preds, -1)
+    preds = tf.math.argmax(preds, -1)
     points = points.numpy()
     
     for i in range(test_points1.shape[0]):
@@ -154,14 +161,21 @@ def detect_foot(fpath):
 
 
 # fpaths = glob.glob('test-files/*')
-# global count
-# count = 0
+fpaths = glob.glob("test-files/Right_Jodie Stanborough - Foot, for AFO, Both - 20230822, 175837/")
+global count
+count = 0
 # for i in fpaths:
 #     print()
 #     print(i)
 #     detect_foot(i)
+        
+for i in fpaths:
+    for m in range(3):
+        print()
+        print(i)
+        detect_foot(i)
     
-# print(len(fpaths), count)
+print(len(fpaths), count)
 
 # from build_model import build_model
 # model = build_model()
