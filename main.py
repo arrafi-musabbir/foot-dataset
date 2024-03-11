@@ -140,6 +140,7 @@ def manual_filter(file_path):
 
     current_time = now.strftime("%H:%M:%S")
     print(f"Current Time = {current_time}")
+    
     file = file_path
     clean_directory('temp_files')
     clean_directory('pre-filtered')
@@ -279,6 +280,7 @@ if uploaded_file is not None:
     fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
     fpath = os.path.join(os.getcwd(), fpath)
     saveUpload(fpath, uploaded_file)
+    print("\n")
     manual_filter(fpath)
     # st.sidebar.button('quad-conversion', on_click=helper.quad_remesh_conversion, args = [fpath])
     # st.sidebar.button('mirror-mesh-object', on_click=helper.mirror_mesh, args= [fpath])
