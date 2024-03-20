@@ -175,7 +175,7 @@ def manual_filter(file_path):
         ms.save_current_mesh(component_mesh_path)
         # res = ms.apply_filter('get_geometric_measures')
     for key in info_dict:
-        if info_dict[key][0] > mean(nv) and info_dict[key][1] > mean(nf):
+        if info_dict[key][0] >= mean(nv) and info_dict[key][1] >= mean(nf):
             ms = pymeshlab.MeshSet()
             ms.load_new_mesh(key)
             component_mesh_path = f"pre-filtered/{key.split('/')[-1]}"

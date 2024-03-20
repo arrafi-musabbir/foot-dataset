@@ -39,9 +39,6 @@ class OrthogonalRegularizer(keras.regularizers.Regularizer):
         eye = tf.eye(self.num_features)
         return tf.math.reduce_sum(self.l2reg * tf.square(xxt - eye))
 
-
-#     def get_config(self):
-#         return {"num_features": self.num_features, "l2reg": self.l2reg}
         
     
 
@@ -161,7 +158,7 @@ def detect_foot(fpath):
 
 
 # fpaths = glob.glob('test-files/*')
-fpaths = glob.glob("test-files/Right_Jodie Stanborough - Foot, for AFO, Both - 20230822, 175837/")
+fpaths = glob.glob("test-files/FL1")
 global count
 count = 0
 # for i in fpaths:
