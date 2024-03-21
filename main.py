@@ -207,7 +207,7 @@ def order_mesh(directory_path):
 def show_objs_in_directory(fpath, directory_path):
     st.title("OBJ File Downloader")
     obj_files = sorted(glob.glob(os.path.join('temp_files', '*.obj')))
-    selected_obj = st.sidebar.selectbox("Total Seperated Components: {len(obj_files)}", obj_files)
+    selected_obj = st.sidebar.selectbox(f"Total Seperated Components: {len(obj_files)}\n\n from manual-filter", obj_files)
     col1, col2 = st.columns(2)
     
     with col1:
@@ -273,6 +273,36 @@ def saveUpload(fpath, tfile):
         f.write(tfile.getbuffer())
     return True
 
+def reconstruct_mesh(fpath):
+    # os.makedirs('reconstructed', exist_ok=True)
+    clean_directory("pre-filtered")
+    # fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
+    ms = pymeshlab.MeshSet()
+    ms.load_new_mesh(fpath)
+    ms.apply_filter('generate_surface_reconstruction_screened_poisson', visiblelayer=True, preclean=True, threads=1)
+    output_mesh_path = os.path.join('pre-filtered', f"reconstructed_foot_temp.obj")
+    ms.save_current_mesh(output_mesh_path)
+
+def mirror_mesh(fpath):
+    # os.makedirs('reconstructed', exist_ok=True)
+    clean_directory("pre-filtered")
+    ms = pymeshlab.MeshSet()
+    ms.load_new_mesh(fpath)
+        # Define axis mapping for mirroring
+        # if axis =='x':
+    flip_x, flip_y, flip_z = True, False, False
+        # if axis =='y':
+        #     flip_x, flip_y, flip_z = False, True, False
+        # if axis =='z':
+        #     flip_x, flip_y, flip_z = False, False, True
+    axis = 'x'      
+    # Apply the mirror transformation
+    ms.apply_filter('apply_matrix_flip_or_swap_axis', flipx=flip_x, flipy=flip_y, flipz=flip_z)
+    ms.apply_filter('meshing_invert_face_orientation', forceflip = True)
+    output_mesh_path = os.path.join('pre-filtered', f"mirrored_foot_temp_{axis}_axis.obj")
+    # Save the mirrored mesh
+    ms.save_current_mesh(output_mesh_path)
+
 uploaded_file = st.sidebar.file_uploader("Choose a mesh file (.obj)", type='obj')
 if uploaded_file is not None:
     # helper.clean_directory('outputs')
@@ -281,11 +311,12 @@ if uploaded_file is not None:
     fpath = os.path.join(os.getcwd(), fpath)
     saveUpload(fpath, uploaded_file)
     print("\n")
-    manual_filter(fpath)
-    # st.sidebar.button('quad-conversion', on_click=helper.quad_remesh_conversion, args = [fpath])
-    # st.sidebar.button('mirror-mesh-object', on_click=helper.mirror_mesh, args= [fpath])
-    # st.sidebar.button('filter-mesh-artifacts', on_click=helper.filter_artifacts, args= [fpath])
-    # st.sidebar.button('surface-reconstruction', on_click=helper.reconstruct_mesh, args= [fpath])
+    # manual_filter(fpath)
+fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
+st.sidebar.button('ai-filter', on_click=manual_filter, args = [fpath])
+st.sidebar.button('mirror-mesh-object', on_click=mirror_mesh, args= [fpath])
+# st.sidebar.button('filter-mesh-artifacts', on_click=filter_artifacts, args= [fpath])
+st.sidebar.button('surface-reconstruction', on_click=reconstruct_mesh, args= [fpath])
     # a = st.sidebar.button('filter', on_click=manual_filter, args= [fpath])
     # st.sidebar.button('intelligent-filter', on_click=auto_filter, args= ['pre-filtered'])
     # st.sidebar.button('manual-filter', on_click=helper.reconstruct_mesh, args= [fpath])
@@ -301,6 +332,6 @@ if uploaded_file is not None:
     #     key="download_button_2",
     #     mime="text/plain",  )# Specify the MIME type as text/plain for OBJ files
     # if a:
-    show_objs_in_directory(fpath, 'pre-filtered')
+show_objs_in_directory(fpath, 'pre-filtered')
     # helper.show_objs_in_directory(fpath, 'outputs')
     
