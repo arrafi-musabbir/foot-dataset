@@ -132,6 +132,22 @@ def auto_filter(fpath):
         else:
             print("\tpred: {:}, \tlabel: {}".format(f[i], CLASS_MAP1[labels.numpy()[i]]))
 
+def order_mesh(directory_path):
+    obj_files = glob.glob(os.path.join(directory_path, '*foot_*.obj'))
+    info_dict = {}
+    for file in obj_files:
+        ms = pymeshlab.MeshSet()
+        ms.load_new_mesh(file)
+        # Step 2: Get mesh information
+        num_vertices = ms.current_mesh().vertex_number()
+        num_faces = ms.current_mesh().face_number()
+        # Step 3: Print mesh information
+        # print("\tNumber of vertices:", num_vertices)
+        # print("\tNumber of faces:", num_faces)
+        info_dict[file] = [num_vertices, num_faces]
+    sorted_data = dict(sorted(info_dict.items(), key=lambda item: item[1][1], reverse=True))
+    print(sorted_data)
+    return sorted_data.keys()
 
 def manual_filter(file_path):
     from datetime import datetime
@@ -185,29 +201,14 @@ def manual_filter(file_path):
             component_mesh_path = f"pre-filtered/{key.split('/')[-1][:-4]}.stl"
             ms.save_current_mesh(component_mesh_path)
     auto_filter('pre-filtered')
-        
-def order_mesh(directory_path):
-    obj_files = glob.glob(os.path.join(directory_path, '*foot_*.obj'))
-    info_dict = {}
-    for file in obj_files:
-        ms = pymeshlab.MeshSet()
-        ms.load_new_mesh(file)
-        # Step 2: Get mesh information
-        num_vertices = ms.current_mesh().vertex_number()
-        num_faces = ms.current_mesh().face_number()
-        # Step 3: Print mesh information
-        # print("\tNumber of vertices:", num_vertices)
-        # print("\tNumber of faces:", num_faces)
-        info_dict[file] = [num_vertices, num_faces]
-    sorted_data = dict(sorted(info_dict.items(), key=lambda item: item[1][1], reverse=True))
-    print(sorted_data)
-    return sorted_data.keys()
+    show_objs_in_directory(fpath, 'pre-filtered') 
+    
+
 
 
 def show_objs_in_directory(fpath, directory_path):
     st.title("OBJ File Downloader")
-    obj_files = sorted(glob.glob(os.path.join('temp_files', '*.obj')))
-    selected_obj = st.sidebar.selectbox(f"Total Seperated Components: {len(obj_files)}\n\n from manual-filter", obj_files)
+
     col1, col2 = st.columns(2)
     
     with col1:
@@ -224,7 +225,8 @@ def show_objs_in_directory(fpath, directory_path):
         except Exception as e:
             print(f"Error reading or displaying the selected OBJ file: {e}")
             st.error(f"Error reading or displaying the selected OBJ file: {e}")
-            
+        obj_files = sorted(glob.glob(os.path.join('temp_files', '*.obj')))
+        selected_obj = st.selectbox(f"Total Seperated Components: {len(obj_files)}\n\n from manual-filter", obj_files)   
     with col2:
         # obj_files = sorted(glob.glob(os.path.join(directory_path, '*foot_*.obj')), reverse=True)
         obj_files = order_mesh(directory_path)
@@ -282,7 +284,8 @@ def reconstruct_mesh(fpath):
     ms.apply_filter('generate_surface_reconstruction_screened_poisson', visiblelayer=True, preclean=True, threads=1)
     output_mesh_path = os.path.join('pre-filtered', f"reconstructed_foot_temp.obj")
     ms.save_current_mesh(output_mesh_path)
-
+    show_objs_in_directory(fpath, 'pre-filtered') 
+    
 def mirror_mesh(fpath):
     # os.makedirs('reconstructed', exist_ok=True)
     clean_directory("pre-filtered")
@@ -302,12 +305,15 @@ def mirror_mesh(fpath):
     output_mesh_path = os.path.join('pre-filtered', f"mirrored_foot_temp_{axis}_axis.obj")
     # Save the mirrored mesh
     ms.save_current_mesh(output_mesh_path)
+    show_objs_in_directory(fpath, 'pre-filtered') 
 
+import time
 def remesh(fpath):
     path = 'autoremesher.AppImage'
     print("remesh starting!")
     clean_directory("pre-filtered")
-    input_path = fpath
+    clean_directory("squashfs-root")
+    input_path = os.path.join(os.getcwd(), fpath)
     temp_path = 'pre-filtered' + '/remesh_foot_temp.obj'
     output_path = os.path.join(os.getcwd(), temp_path)
     print("input path: ", input_path)
@@ -323,24 +329,31 @@ def remesh(fpath):
     # command = f"./quadremesher/autoremesher.AppImage --help"
     # command = f"./{path} -i {input_path} -o {output_path}"
     # command = f"./{path}  --appimage-extract && ./squashfs-root/AppRun --help && rm -rf ./squashfs-root"
-    command = f"./{path}  --appimage-extract && ./squashfs-root/AppRun -i {input_path} -o {output_path} && rm -rf ./squashfs-root"
+    command = f"./{path}  --appimage-extract && ./squashfs-root/AppRun -i {input_path} -o {output_path}" # && rm -rf ./squashfs-root"
 
     process = subprocess.Popen([command], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    s = time.time()
     while True:
         output = process.stdout.readline()
         if output == '' and process.poll() is not None:
             break
         if output:
             print(output.strip())
-            st.write(output.strip())
-
+            # st.write(output.strip())
+        if time.time()-s > 45:
+            break
+    # time.sleep(45)
+    show_objs_in_directory(fpath, 'pre-filtered') 
+    
 uploaded_file = st.sidebar.file_uploader("Choose a mesh file (.obj)", type='obj')
 if uploaded_file is not None:
     # helper.clean_directory('outputs')
     # helper.clean_directory('uploaded_file')
     fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
     fpath = os.path.join(os.getcwd(), fpath)
-    saveUpload(fpath, uploaded_file)
+    while True:
+        if saveUpload(fpath, uploaded_file):
+            break
     print("\n")
     # manual_filter(fpath)
     
@@ -352,5 +365,5 @@ st.sidebar.button('mirror-mesh-object', on_click=mirror_mesh, args= [fpath])
 st.sidebar.button('quad-remesh', on_click=remesh, args= [fpath])
 st.sidebar.button('surface-reconstruction', on_click=reconstruct_mesh, args= [fpath])
 
-show_objs_in_directory(fpath, 'pre-filtered') 
+# show_objs_in_directory(fpath, 'pre-filtered') 
     
