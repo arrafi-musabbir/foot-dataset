@@ -332,6 +332,7 @@ def remesh(fpath):
             break
         if output:
             print(output.strip())
+            st.write(output.strip())
 
 uploaded_file = st.sidebar.file_uploader("Choose a mesh file (.obj)", type='obj')
 if uploaded_file is not None:
