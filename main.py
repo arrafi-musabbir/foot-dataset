@@ -346,11 +346,11 @@ if uploaded_file is not None:
     
 
 fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
-remesh(fpath)
-# st.sidebar.button('ai-filter', on_click=manual_filter, args = [fpath])
-# st.sidebar.button('mirror-mesh-object', on_click=mirror_mesh, args= [fpath])
-# # st.sidebar.button('filter-mesh-artifacts', on_click=filter_artifacts, args= [fpath])
-# st.sidebar.button('surface-reconstruction', on_click=reconstruct_mesh, args= [fpath])
+# remesh(fpath)
+st.sidebar.button('ai-filter', on_click=manual_filter, args = [fpath])
+st.sidebar.button('mirror-mesh-object', on_click=mirror_mesh, args= [fpath])
+st.sidebar.button('quad-remesh', on_click=remesh, args= [fpath])
+st.sidebar.button('surface-reconstruction', on_click=reconstruct_mesh, args= [fpath])
 
-# show_objs_in_directory(fpath, 'pre-filtered') 
+show_objs_in_directory(fpath, 'pre-filtered') 
     
