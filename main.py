@@ -9,7 +9,7 @@ import keras
 from keras import layers
 import numpy as np
 import glob
-# import trimesh
+import trimesh
 from tensorflow import data as tf_data
 from stpyvista import stpyvista
 import pyvista as pv
