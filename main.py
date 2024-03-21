@@ -303,6 +303,36 @@ def mirror_mesh(fpath):
     # Save the mirrored mesh
     ms.save_current_mesh(output_mesh_path)
 
+def remesh(fpath):
+    path = 'autoremesher.AppImage'
+    print("remesh starting!")
+    clean_directory("pre-filtered")
+    input_path = fpath
+    temp_path = 'pre-filtered' + '/remesh.obj'
+    output_path = os.path.join(os.getcwd(), temp_path)
+    print("input path: ", input_path)
+    print("output path: ", output_path)
+    print()
+
+    p = subprocess.Popen([f'chmod a+x ./{path}'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+    out, err = p.communicate()
+    print('SUBPROCESS ERROR: ' + str(err))
+    print('SUBPROCESS stdout: ' + str(out.decode())) 
+    print("")
+
+    # command = f"./quadremesher/autoremesher.AppImage --help"
+    # command = f"./{path} -i {input_path} -o {output_path}"
+    command = f"./{path}  --appimage-extract && ./squashfs-root/AppRun --help && rm -rf ./squashfs-root"
+    # command = f"./{path}  --appimage-extract && ./squashfs-root/AppRun -i {input_path} -o {output_path} && rm -rf ./squashfs-root"
+
+    process = subprocess.Popen([command], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            print(output.strip())
+
 uploaded_file = st.sidebar.file_uploader("Choose a mesh file (.obj)", type='obj')
 if uploaded_file is not None:
     # helper.clean_directory('outputs')
@@ -312,26 +342,14 @@ if uploaded_file is not None:
     saveUpload(fpath, uploaded_file)
     print("\n")
     # manual_filter(fpath)
+    
+
 fpath = os.path.join("uploaded_file", 'uploaded_mesh.obj')
-st.sidebar.button('ai-filter', on_click=manual_filter, args = [fpath])
-st.sidebar.button('mirror-mesh-object', on_click=mirror_mesh, args= [fpath])
-# st.sidebar.button('filter-mesh-artifacts', on_click=filter_artifacts, args= [fpath])
-st.sidebar.button('surface-reconstruction', on_click=reconstruct_mesh, args= [fpath])
-    # a = st.sidebar.button('filter', on_click=manual_filter, args= [fpath])
-    # st.sidebar.button('intelligent-filter', on_click=auto_filter, args= ['pre-filtered'])
-    # st.sidebar.button('manual-filter', on_click=helper.reconstruct_mesh, args= [fpath])
-    # obj_files = sorted(glob.glob(os.path.join('pre-filtered', '*.obj')))
-    # if not obj_files:
-    #     st.sidebar.warning("No OBJ files found in the directory.")
-    # selected_obj = st.sidebar.selectbox("Select an OBJ file to view:", obj_files)
-    # obj_file_bytes = open(selected_obj, 'rb').read()
-    # st.sidebar.download_button(
-    #     label="Download Selected OBJ",
-    #     data=obj_file_bytes,
-    #     file_name=os.path.basename(selected_obj),
-    #     key="download_button_2",
-    #     mime="text/plain",  )# Specify the MIME type as text/plain for OBJ files
-    # if a:
-show_objs_in_directory(fpath, 'pre-filtered')
-    # helper.show_objs_in_directory(fpath, 'outputs')
+remesh(fpath)
+# st.sidebar.button('ai-filter', on_click=manual_filter, args = [fpath])
+# st.sidebar.button('mirror-mesh-object', on_click=mirror_mesh, args= [fpath])
+# # st.sidebar.button('filter-mesh-artifacts', on_click=filter_artifacts, args= [fpath])
+# st.sidebar.button('surface-reconstruction', on_click=reconstruct_mesh, args= [fpath])
+
+# show_objs_in_directory(fpath, 'pre-filtered') 
     
